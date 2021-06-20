@@ -41,7 +41,7 @@ module.exports = {
   },
   updateProfile(req, res) {
     const { name, about } = req.body;
-    User.findByIdAndUpdate(req.user._id, { name, about }, { new: true }, { runValidators: true })
+    User.findByIdAndUpdate(req.user._id, { name, about }, { new: true, runValidators: true })
       .then((user) => {
         if (user === null) {
           res.status(ERR_NOT_FOUND).send({ message: 'Пользователь с указанным _id не найден.' });
@@ -59,7 +59,7 @@ module.exports = {
   },
   updateAvatar(req, res) {
     const { avatar } = req.body;
-    User.findByIdAndUpdate(req.user._id, { avatar }, { new: true }, { runValidators: true })
+    User.findByIdAndUpdate(req.user._id, { avatar }, { new: true, runValidators: true })
       .then((user) => {
         if (user === null) {
           res.status(ERR_NOT_FOUND).send({ message: 'Пользователь с указанным _id не найден.' });

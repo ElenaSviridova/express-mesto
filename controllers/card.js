@@ -24,7 +24,7 @@ module.exports = {
   },
   removeCard(req, res) {
     Card.findByIdAndDelete(req.params.cardId)
-      .orFail(new Error('NotValid'))
+      .orFail(new Error('NotValidId'))
       .then((card) => {
         res.status(OK).send({ card });
       })
