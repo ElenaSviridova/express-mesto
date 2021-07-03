@@ -23,16 +23,28 @@ module.exports = {
       });
   },
   removeCard(req, res) {
-    Card.findByIdAndDelete(req.params.cardId)
+    Card.findById(req.params.cardId)
       .orFail(new Error('NotValidId'))
       .then((card) => {
-        res.status(OK).send({ card });
+        if (card.owner.toString() !== req.user._id) {
+          console.log("kuku");
+          return Promise.reject(new Error('Невозможно удалить чужую карточку'));
+        }
+        Card.deleteOne({ _id: card._id })
+          .then(() => {
+            res.status(OK).send({ card });
+          })
+          .catch((err) => {
+            console.log(err);
+          });
       })
       .catch((err) => {
         if (err.message === 'NotValidId') {
           res.status(ERR_NOT_FOUND).send({ message: 'Карточка с указанным _id не найдена.' });
         } else if (err.name === 'CastError') {
           res.status(ERR_BAD_REQUEST).send({ message: 'Переданы некорректные данные.' });
+        } else if (err.message === 'Невозможно удалить чужую карточку') {
+          res.status(ERR_BAD_REQUEST).send({ message: 'Невозможно удалить чужую карточку' });
         } else {
           res.status(ERR_INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
         }

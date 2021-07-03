@@ -1,14 +1,21 @@
 const express = require('express');
+const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const helmet = require('helmet');
 const userRoutes = require('./routes/user');
 const cardRoutes = require('./routes/card');
-const { ERR_NOT_FOUND } = require('./constants');
+const { login, createUser } = require('./controllers/user');
+const auth = require('./middlewares/auth');
+const {
+  ERR_BAD_REQUEST, ERR_NOT_FOUND, ERR_INTERNAL_SERVER_ERROR, OK,
+} = require('./constants');
 
 const { PORT = 3000 } = process.env;
 
 const app = express();
+
+app.use(cookieParser());
 
 app.use(helmet());
 
@@ -24,12 +31,12 @@ async function start() {
   });
 }
 
-app.use((req, res, next) => {
-  req.user = {
-    _id: '60cb15550d34e0084861eec6',
-  };
-  next();
-});
+start();
+
+app.post('/signin', login);
+app.post('/signup', createUser);
+
+app.use(auth);
 
 app.use('/users', userRoutes);
 
@@ -40,8 +47,16 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use((err, req, res, next) => {
+  if (err.message === 'NotValidId') {
+    res.status(ERR_NOT_FOUND).send({ message: 'Пользователь с указанным _id не найден.' });
+  } else if (err.name === 'CastError') {
+    res.status(ERR_BAD_REQUEST).send({ message: 'Переданы некорректные данные.' });
+  } else {
+    res.status(ERR_INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`App listening on port ${PORT}`);
 });
-
-start();
