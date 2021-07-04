@@ -3,13 +3,12 @@ const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const helmet = require('helmet');
+const { errors } = require('celebrate');
 const userRoutes = require('./routes/user');
 const cardRoutes = require('./routes/card');
 const { login, createUser } = require('./controllers/user');
 const auth = require('./middlewares/auth');
-const {
-  ERR_BAD_REQUEST, ERR_NOT_FOUND, ERR_INTERNAL_SERVER_ERROR, OK,
-} = require('./constants');
+const { ERR_NOT_FOUND, ERR_INTERNAL_SERVER_ERROR } = require('./constants');
 
 const { PORT = 3000 } = process.env;
 
@@ -47,14 +46,19 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use(errors());
+
 app.use((err, req, res, next) => {
-  if (err.message === 'NotValidId') {
-    res.status(ERR_NOT_FOUND).send({ message: 'Пользователь с указанным _id не найден.' });
-  } else if (err.name === 'CastError') {
-    res.status(ERR_BAD_REQUEST).send({ message: 'Переданы некорректные данные.' });
-  } else {
-    res.status(ERR_INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
-  }
+  const { statusCode = ERR_INTERNAL_SERVER_ERROR, message } = err;
+  res
+    .status(statusCode)
+    .send({
+      // проверяем статус и выставляем сообщение в зависимости от него
+      message: statusCode === ERR_INTERNAL_SERVER_ERROR
+        ? 'На сервере произошла ошибка'
+        : message,
+    });
+  next();
 });
 
 app.listen(PORT, () => {
