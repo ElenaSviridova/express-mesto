@@ -6,12 +6,14 @@ const NotFoundError = require('../errors/not-found-error');
 const BadRequestError = require('../errors/bad-request-error');
 const ConflictError = require('../errors/conflict-error');
 
+const { JWT_SECRET = 'some-secret-key' } = process.env;
+
 module.exports = {
   login(req, res, next) {
     const { email, password } = req.body;
     User.findUserByCredentials(email, password)
       .then((user) => {
-        const token = jwt.sign({ _id: user._id }, 'some-secret-key', { expiresIn: '7d' });
+        const token = jwt.sign({ _id: user._id }, JWT_SECRET, { expiresIn: '7d' });
         return res
           .cookie('jwt', token, {
             // token - наш JWT токен, который мы отправляем
@@ -51,7 +53,11 @@ module.exports = {
       .then((hash) => User.create({
         name, about, avatar, email, password: hash,
       }))
-      .then((user) => res.send({ user }))
+      .then(() => res.status(OK).send({
+        data: {
+          name, about, avatar, email,
+        },
+      }))
       .catch((err) => {
         if (err.name === 'ValidationError') {
           throw new BadRequestError('Переданы некорректные данные при создании пользователя');
