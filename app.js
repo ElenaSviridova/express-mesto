@@ -10,6 +10,7 @@ const cardRoutes = require('./routes/card');
 const { login, createUser } = require('./controllers/user');
 const auth = require('./middlewares/auth');
 const { ERR_NOT_FOUND, ERR_INTERNAL_SERVER_ERROR } = require('./constants');
+const { requestLogger, errorLogger } = require('./middlewares/logger');
 
 const { PORT = 3000 } = process.env;
 
@@ -33,6 +34,8 @@ async function start() {
 
 start();
 
+app.use(requestLogger);
+
 app.post('/signin', celebrate({
   body: Joi.object().keys({
     email: Joi.string().required().email(),
@@ -43,7 +46,7 @@ app.post('/signup', celebrate({
   body: Joi.object().keys({
     email: Joi.string().required().email(),
     password: Joi.string().required().min(8),
-    name: Joi.string().required().min(2).max(30),
+    name: Joi.string().min(2).max(30),
     about: Joi.string().min(2).max(30),
     avatar: Joi.string().pattern(/(http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-/]))?/),
   }),
@@ -59,6 +62,8 @@ app.use((req, res, next) => {
   res.status(ERR_NOT_FOUND).send({ message: 'Запрашиваемый ресурс не найден' });
   next();
 });
+
+app.use(errorLogger); // подключаем логгер ошибок
 
 app.use(errors());
 
